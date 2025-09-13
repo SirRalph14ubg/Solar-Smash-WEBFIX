@@ -5,4 +5,4 @@ I went thru many failures. If it wasnt for him, this project could've taken way 
 Please go to his github and star some of his projects it would really make me happy: https://github.com/SirRalph14ubg
 
 CREDITS TO SIRRALPH14UBG FOR THE ORIGINAL PROJECT.
-Edit from owner thank you for making this game possible Love SR14
+Edit from owner thank you for making this game possible SR14
