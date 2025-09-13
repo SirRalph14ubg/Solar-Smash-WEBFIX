@@ -2,19 +2,21 @@
 document.addEventListener("DOMContentLoaded", () => {
   // ===== CONFIG =====
   const s3Url = "https://solar-smash-webgl.s3.us-east-2.amazonaws.com"; // S3 for data/wasm/assets
-  const cdnUrl = "https://cdn.jsdelivr.net/gh/dartsc/Solar-Smash-WEBFIX@latest/Build"; // jsDelivr for loader/framework
+  const cdnUrl = "https://cdn.jsdelivr.net/gh/dartsc/Solar-Smash-WEBFIX@latest"; // jsDelivr for loader/framework
   const loaderUrl = cdnUrl + "/Build.loader.js";
-  const ytApiUrl = "https://www.youtube.com/game_api/v1"; // YT Game API
+  const ytApiUrl = "https://www.youtube.com/game_api/v1";
 
   // ===== CREATE CONTAINER =====
   const container = document.createElement("div");
   container.id = "unity-container";
-  container.style.position = "fixed";
-  container.style.top = "0";
-  container.style.left = "0";
-  container.style.width = "100%";
-  container.style.height = "100%";
-  container.style.background = "#000";
+  Object.assign(container.style, {
+    position: "fixed",
+    top: "0",
+    left: "0",
+    width: "100%",
+    height: "100%",
+    background: "#000"
+  });
   document.body.appendChild(container);
 
   // ===== CREATE CANVAS =====
@@ -25,40 +27,56 @@ document.addEventListener("DOMContentLoaded", () => {
   canvas.style.height = "100%";
   container.appendChild(canvas);
 
+  // Ensure WebGL buffer matches screen resolution
+  function resizeCanvas() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
+  window.addEventListener("resize", resizeCanvas);
+  resizeCanvas();
+
   // ===== CREATE LOADING BAR =====
   const loadingBar = document.createElement("div");
-  loadingBar.id = "unity-loading-bar";
-  loadingBar.style.position = "absolute";
-  loadingBar.style.top = "50%";
-  loadingBar.style.left = "50%";
-  loadingBar.style.transform = "translate(-50%, -50%)";
-  loadingBar.style.width = "50%";
-  loadingBar.style.maxWidth = "600px";
+  Object.assign(loadingBar.style, {
+    position: "absolute",
+    top: "50%",
+    left: "50%",
+    transform: "translate(-50%, -50%)",
+    width: "50%",
+    maxWidth: "600px"
+  });
   container.appendChild(loadingBar);
 
   const progressBarEmpty = document.createElement("div");
-  progressBarEmpty.id = "unity-progress-bar-empty";
-  progressBarEmpty.style.width = "100%";
-  progressBarEmpty.style.background = "#ccc";
+  Object.assign(progressBarEmpty.style, {
+    width: "100%",
+    height: "20px",
+    background: "#ccc",
+    borderRadius: "10px",
+    overflow: "hidden"
+  });
   loadingBar.appendChild(progressBarEmpty);
 
   const progressBarFull = document.createElement("div");
-  progressBarFull.id = "unity-progress-bar-full";
-  progressBarFull.style.width = "0%";
-  progressBarFull.style.height = "20px";
-  progressBarFull.style.background = "#4caf50";
+  Object.assign(progressBarFull.style, {
+    width: "0%",
+    height: "100%",
+    background: "#4caf50",
+    transition: "width 0.2s ease"
+  });
   progressBarEmpty.appendChild(progressBarFull);
 
   // ===== CREATE WARNING BANNER =====
   const warningBanner = document.createElement("div");
-  warningBanner.id = "unity-warning";
-  warningBanner.style.position = "absolute";
-  warningBanner.style.top = "0";
-  warningBanner.style.width = "100%";
-  warningBanner.style.textAlign = "center";
-  warningBanner.style.color = "white";
-  warningBanner.style.background = "red";
-  warningBanner.style.display = "none";
+  Object.assign(warningBanner.style, {
+    position: "absolute",
+    top: "0",
+    width: "100%",
+    textAlign: "center",
+    color: "white",
+    background: "red",
+    display: "none"
+  });
   container.appendChild(warningBanner);
 
   function unityShowBanner(msg, type) {
@@ -94,24 +112,41 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // ===== MOBILE / DESKTOP ADJUSTMENTS =====
   if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
-    const meta = document.createElement('meta');
-    meta.name = 'viewport';
-    meta.content = 'width=device-width, height=device-height, initial-scale=1.0, user-scalable=no, shrink-to-fit=yes';
+    const meta = document.createElement("meta");
+    meta.name = "viewport";
+    meta.content = "width=device-width, height=device-height, initial-scale=1.0, maximum-scale=1.0, user-scalable=no";
     document.head.appendChild(meta);
     container.className = "unity-mobile";
     canvas.className = "unity-mobile";
-  } else {
-    canvas.style.width = "100%";
-    canvas.style.height = "100%";
   }
 
   loadingBar.style.display = "block";
+
+  // ===== FIX: UNLOCK AUDIO =====
+  function unlockAudioContext() {
+    if (typeof AudioContext !== "undefined") {
+      const ctx = new AudioContext();
+      if (ctx.state === "suspended") {
+        const resume = () => {
+          ctx.resume().then(() => {
+            console.log("AudioContext resumed");
+            document.removeEventListener("click", resume);
+            document.removeEventListener("touchstart", resume);
+            ctx.close(); // close temp context, Unity will create its own
+          });
+        };
+        document.addEventListener("click", resume, { once: true });
+        document.addEventListener("touchstart", resume, { once: true });
+      }
+    }
+  }
 
   // ===== LOAD YT GAME API =====
   function loadYTGameAPI(callback) {
     const ytScript = document.createElement("script");
     ytScript.src = ytApiUrl;
     ytScript.onload = callback;
+    ytScript.onerror = () => callback(); // fallback if YT fails
     document.body.appendChild(ytScript);
   }
 
